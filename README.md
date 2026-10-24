@@ -20,7 +20,7 @@ IMAP(Himalaya) ──5분 스캔──> 상태 원장(account:mail-id)
                                    SMTP 전 상태 기록 → Sent 재확인
 ```
 
-설치는 [docs/setup.md](docs/setup.md), 설계 원리와 실제 운영판과의 차이는 [docs/design.md](docs/design.md), 에이전트가 따라할 설치 스킬은 [SKILL.md](SKILL.md)를 보세요.
+설치는 [docs/setup.md](docs/setup.md), 수업에서 공유할 기능별 해설은 [docs/student-design-guide.md](docs/student-design-guide.md), LLM에 전달할 구현 명세는 [docs/llm-implementation-brief.md](docs/llm-implementation-brief.md)를 보세요. 운영판과 실습판의 구조 비교는 [docs/design.md](docs/design.md), 에이전트가 따라할 설치 스킬은 [SKILL.md](SKILL.md)입니다.
 
 ## 빠른 시작
 
