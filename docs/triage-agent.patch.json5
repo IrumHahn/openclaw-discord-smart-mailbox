@@ -1,0 +1,9 @@
+{
+  agents: {
+    entries: {
+      "mail-triage": {
+        tools: { deny: ["*"] },
+      },
+    },
+  },
+}

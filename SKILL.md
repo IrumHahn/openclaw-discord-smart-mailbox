@@ -1,0 +1,14 @@
+---
+name: discord-smart-mailbox
+description: Set up, operate, or troubleshoot a private Discord AI smart mailbox with OpenClaw and Himalaya. Use when a user wants email triage, Korean summaries, reply drafts and owner-only approval in Discord after installing OpenClaw.
+---
+
+# Discord Smart Mailbox
+
+1. **Discover the environment.** Read [docs/setup.md](docs/setup.md), check `openclaw --version`, `openclaw gateway status`, `openclaw channels status --probe`, `himalaya --version`, and whether the user already has a private Discord channel and IMAP/SMTP accounts. Never print tokens or mailbox bodies. **Done when:** the required tools and missing setup steps are known.
+2. **Explain and choose the boundary.** Read [docs/design.md](docs/design.md). Confirm which mailbox accounts and Discord owner/channel to use. Keep automatic sending, deleting, spam/blocking, and reusable auto-rules **off** unless the user explicitly authorizes a precise rule. Never assume a classmate's pricing, sender identity, or folder names. **Done when:** identities, folders, and allowed side effects are explicit.
+3. **Configure privately.** Create a dedicated `mail-triage` agent with `tools.deny: ["*"]` and no channel bindings; verify the effective policy before reading any mail. Follow setup steps to make a private channel, add a bot with only needed permissions, configure Himalaya, copy `config.example.json` to ignored `config.json`, and create a mode-0600 `~/.openclaw/.env` (or ignored local `.env`). Do not include credentials, raw emails, or private IDs in Git. **Done when:** isolation and read-only Discord/mail probes succeed.
+4. **Baseline and test.** Run `./scripts/run.sh --init` once; existing mail must remain untouched. Run `./scripts/run.sh` against a harmless test email. Verify summary, owner mention, thread, decision card, and reaction handling. Choose a self-sent test address for a real ✅ send only after the owner approves; verify Sent. **Done when:** the full flow is observed, or a specific blocked step is reported.
+5. **Schedule and monitor.** Install the one-minute runner using the user's preferred scheduler only after inspecting existing scheduler entries. The runner checks approvals every minute and scans mail every five minutes. Check `.state/mailbox.json` statuses, Discord channel, and Sent before retrying any uncertain side effect. **Done when:** a scheduled run succeeds and no duplicate send occurs.
+
+For commands and troubleshooting use [docs/setup.md](docs/setup.md). For the production-inspired architecture, safety invariants, and differences from the classroom starter use [docs/design.md](docs/design.md). The deterministic code is in [scripts/mailbox.mjs](scripts/mailbox.mjs) and [scripts/policy.mjs](scripts/policy.mjs); modify it only after focused verification.

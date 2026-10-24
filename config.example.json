@@ -1,0 +1,14 @@
+{
+  "discordChannelId": "YOUR_PRIVATE_CHANNEL_ID",
+  "ownerDiscordId": "YOUR_DISCORD_USER_ID",
+  "stateDir": ".state",
+  "accounts": [
+    {
+      "id": "personal",
+      "address": "you@example.com",
+      "from": "Your Name <you@example.com>",
+      "sentFolder": "Sent",
+      "trashFolder": "Trash"
+    }
+  ]
+}
