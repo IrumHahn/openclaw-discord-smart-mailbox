@@ -91,7 +91,7 @@ himalaya mailbox list -a personal
 himalaya --json envelope list -a personal -m INBOX -p 1 -s 3
 ```
 
-`personal`은 **자신이 설정한 계정 ID**로 바꿉니다. 복수 계정이면 각각 설정하세요. 비밀번호·OAuth 비밀값은 Himalaya가 지원하는 키링/비밀 저장 방식을 사용하고, 프로젝트 폴더에 복사하지 않습니다. 각 계정의 **보낸편지함·휴지통 폴더 이름**은 `himalaya mailbox list` 결과의 ID 그대로 `config.json`에 입력합니다. Gmail의 현지화된 폴더 이름은 `Sent`/`Trash`와 다를 수 있습니다(예: `[Gmail]/보낸편지함`, `[Gmail]/휴지통`). 발송 후 보낸편지함 사본은 Gmail이 자동으로 남기므로 `saveSentCopy`는 `false`로 둡니다. 사본을 자동으로 남기지 않는 메일 서버만 `true`로 바꿉니다. 읽기만 확인하는 단계에서는 실제 메일 발송을 하지 않습니다.
+`personal`은 **자신이 설정한 계정 ID**로 바꿉니다. 복수 계정이면 각각 설정하세요. 비밀번호·OAuth 비밀값은 Himalaya가 지원하는 키링/비밀 저장 방식을 사용하고, 프로젝트 폴더에 복사하지 않습니다. 각 계정의 **보낸편지함·휴지통·스팸 폴더 이름**은 `himalaya mailbox list` 결과의 ID 그대로 `config.json`에 입력합니다. Gmail의 현지화된 폴더 이름은 `Sent`/`Trash`와 다를 수 있습니다(예: `[Gmail]/보낸편지함`, `[Gmail]/휴지통`, `[Gmail]/스팸함`). 발송 후 보낸편지함 사본은 Gmail이 자동으로 남기므로 `saveSentCopy`는 `false`로 둡니다. 사본을 자동으로 남기지 않는 메일 서버만 `true`로 바꿉니다. 읽기만 확인하는 단계에서는 실제 메일 발송을 하지 않습니다.
 
 ## 5. 키트 설치·설정
 
@@ -101,7 +101,7 @@ cp config.example.json config.json
 chmod 600 config.json ~/.openclaw/.env
 ```
 
-`config.json`의 채널 ID, 소유자 Discord ID, 계정 ID, 발신 주소, `from`, 보낸편지함/휴지통 폴더 이름을 자기 값으로 바꿉니다. `from`은 SMTP 계정이 실제로 발송할 수 있는 주소여야 합니다. 다른 사람을 사칭하는 별칭은 사용하지 않습니다. 파일은 `.gitignore` 대상입니다.
+`config.json`의 채널 ID, 소유자 Discord ID, 계정 ID, 발신 주소, `from`, 보낸편지함/휴지통/스팸 폴더 이름(`sentFolder`, `trashFolder`, `spamFolder`)을 자기 값으로 바꿉니다. `spamFolder`가 없으면 🚫만 동작하지 않고, 나머지는 그대로 동작합니다. `from`은 SMTP 계정이 실제로 발송할 수 있는 주소여야 합니다. 다른 사람을 사칭하는 별칭은 사용하지 않습니다. 파일은 `.gitignore` 대상입니다.
 
 프로젝트의 `scripts/run.sh`는 로컬 `.env`가 있으면 먼저 읽고, 없으면 `~/.openclaw/.env`를 읽습니다. 실습용으로 프로젝트 `.env`를 따로 만들 수 있지만 같은 토큰을 중복 보관하므로 가능한 한 기존 OpenClaw 파일을 활용하세요.
 
@@ -114,7 +114,7 @@ npm test
 ./scripts/run.sh
 ```
 
-`--init`은 현재 INBOX를 페이지별로 끝까지 읽어 가장 높은 IMAP UID를 기준선으로 기록하고 **기존 메일을 처리하지 않습니다**. 두 번째 실행부터 이 UID보다 큰 새 메일만 선별합니다. 메일함이 10,000건을 넘거나 Himalaya ID가 숫자 UID가 아니면 안전하게 중지하므로, 별도 실습 계정/폴더를 쓰세요. 실제 시험에는 자신이 관리하는 다른 주소에서 무해한 테스트 문의를 보내세요. Discord에 요약·스레드·초안·반응 4개가 생겼는지 확인합니다. ✅를 누르면 **실제 SMTP 발송**이므로 테스트 수신자가 본인인지 먼저 확인합니다. 발송 후 `himalaya --json envelope list -a personal -m '<보낸편지함>' -p 1 -s 5`와 `.state/mailbox.json`의 `verifiedSentAt`을 확인합니다.
+`--init`은 현재 INBOX를 페이지별로 끝까지 읽어 가장 높은 IMAP UID를 기준선으로 기록하고 **기존 메일을 처리하지 않습니다**. 두 번째 실행부터 이 UID보다 큰 새 메일만 선별합니다. 메일함이 10,000건을 넘거나 Himalaya ID가 숫자 UID가 아니면 안전하게 중지하므로, 별도 실습 계정/폴더를 쓰세요. 실제 시험에는 자신이 관리하는 다른 주소에서 무해한 테스트 문의를 보내세요. Discord에 요약·스레드·초안·반응 6개가 생겼는지 확인합니다. ✅를 누르면 **실제 SMTP 발송**이므로 테스트 수신자가 본인인지 먼저 확인합니다. 발송 후 `himalaya --json envelope list -a personal -m '<보낸편지함>' -p 1 -s 5`와 `.state/mailbox.json`의 `verifiedSentAt`을 확인합니다.
 
 > ⚠️ **첫 메일 시험은 비서(에이전트) 채팅의 exec로 실행하지 마세요.** 다른 에이전트 안에서 `openclaw agent`를 부르면 OpenClaw 세션 보안 정책이 막아서 카드에 "AI 요약 실패"가 뜹니다. `--init`과 `npm test`는 exec로 해도 됩니다. 메일 시험은 아래 정기 작업으로 하거나 VPS 터미널에서 직접 `./scripts/run.sh`를 실행하세요.
 
@@ -146,7 +146,10 @@ cron 환경에서 `openclaw`/`himalaya`를 못 찾으면 `PATH`를 crontab에 �
 - `sending`, `send_uncertain`, `sent_check_failed`: 자동 재발송하지 않습니다. Sent와 실제 수신 여부를 먼저 확인합니다.
 - `discord_post_uncertain`/`discord_partial`: 게시물이 이미 생겼는지 채널을 확인합니다. 프로그램은 중복 게시를 피하려고 자동 재시도하지 않습니다.
 - `read_failed`: IMAP 설정·권한·메일 ID를 확인합니다. 새 메일 재처리가 필요하면 원장 백업 후 해당 기록만 신중히 복구합니다.
-- `trash_uncertain`: 휴지통과 INBOX를 확인하고 수동 결정합니다.
+- `trash_uncertain`, `spam_uncertain`: 휴지통·스팸함과 INBOX를 확인하고 수동 결정합니다.
+- 글을 남겼는데 "글 내용을 읽지 못했습니다"가 나오면: 봇의 **Message Content Intent**를 켭니다.
+- 차단 해제: `./scripts/run.sh --unblock 주소`. 규칙 목록: `./scripts/run.sh --rules`. 규칙 끄기: 자동 답장 알림의 ⏸️ 또는 `./scripts/run.sh --rule-off 규칙ID`. 규칙에는 예시 메일 본문과 승인 문안이 들어 있으며 `.state/mailbox.json`(권한 600)에만 저장됩니다.
+- 🔁·🚫는 **내 주소에서 온 메일에는 동작하지 않습니다.** 자신이 관리하는 다른 주소에서 보내 시험합니다. 같은 제목의 답장을 보낸 뒤 5분 안에 온 메일은 이미 답한 것으로 보아 승인 카드로 옵니다.
 - 모델 장애: 요약 실패 문구와 빈 초안으로 승인함에 올립니다. 빈 초안에 ✅를 눌러도 발송하지 않습니다.
 - 원장과 로그는 개인 정보이므로 백업·보관 정책을 정하고 공유하지 마세요. `.state`는 0700, 상태 파일은 0600으로 생성됩니다.
 

@@ -48,3 +48,18 @@ test('builds an ASCII-only reply that decodes back to Korean', () => {
   assert.match(head, /From: =\?UTF-8\?B\?[^?]+\?= <me@example\.com>/)
   assert.match(head, /Message-ID: <[^@]+@example\.com>/)
 })
+
+test('subject spaces survive encoding wherever the split lands', () => {
+  for (let pad = 0; pad < 16; pad++) {
+    const subject = `${'가'.repeat(pad)} [시험] 모임 장소 문의 아주 긴 제목 나눠도 공백이 남아야 합니다`
+    const raw = buildReply({ from: 'me@example.com', to: 'you@example.com', subject, body: 'x' })
+    const parts = [...raw.split('\r\n\r\n')[0].matchAll(/=\?UTF-8\?B\?([^?]+)\?=/g)].map(m => Buffer.from(m[1], 'base64').toString())
+    assert.equal(parts.join(''), `Re: ${subject}`)
+    assert.ok(parts.every(part => part === part.trim()), `no edge space with pad ${pad}`)
+  }
+})
+
+test('sent verification tolerates a reader that dropped a subject space', () => {
+  const record = { from: 'sender@example.com', subject: '[시험] 모임 장소', receivedAt: '2026-10-24T00:00:00Z' }
+  assert.equal(sentMatch([{ to: [{ email: 'sender@example.com' }], subject: 'Re: [시험]모임 장소', date: '2026-10-24T00:02:00Z' }], record), true)
+})

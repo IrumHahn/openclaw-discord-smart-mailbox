@@ -9,6 +9,7 @@
       "from": "Your Name <you@example.com>",
       "sentFolder": "Sent",
       "trashFolder": "Trash",
+      "spamFolder": "Spam",
       "saveSentCopy": false
     }
   ]
