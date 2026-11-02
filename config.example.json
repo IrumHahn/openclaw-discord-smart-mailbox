@@ -8,7 +8,8 @@
       "address": "you@example.com",
       "from": "Your Name <you@example.com>",
       "sentFolder": "Sent",
-      "trashFolder": "Trash"
+      "trashFolder": "Trash",
+      "saveSentCopy": false
     }
   ]
 }

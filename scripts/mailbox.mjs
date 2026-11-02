@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
-import { ACTIONS, emailAddress, mustReview, ownerDecision, parseTriage, recordKey, safeDiscord, safeHeader, sentMatch } from './policy.mjs'
+import { ACTIONS, buildReply, emailAddress, himalayaVersionOk, mustReview, ownerDecision, parseTriage, recordKey, safeDiscord, safeHeader, sentMatch } from './policy.mjs'
 
 const root = path.resolve(import.meta.dirname, '..')
 const config = JSON.parse(fs.readFileSync(process.env.SMART_MAILBOX_CONFIG || path.join(root, 'config.json'), 'utf8'))
@@ -35,10 +35,10 @@ function save() {
 function run(binary, args, input, timeout = 45_000) {
   return execFileSync(binary, args, { input, encoding: 'utf8', timeout, maxBuffer: 12 * 1024 * 1024 })
 }
-function jsonArray(output) { const index = output.indexOf('['); if (index < 0) throw Error('Expected JSON array'); return JSON.parse(output.slice(index)) }
 function envelopes(account, folder = 'INBOX', limit = 100, page = 1) {
-  try { return jsonArray(run('himalaya', ['envelope', 'list', '-a', account.id, '-f', folder, '-p', String(page), '-s', String(limit), '-o', 'json', 'order', 'by', 'date', 'desc'])) }
-  catch (error) { if (page > 1 && /out.of.bound/i.test(String(error.stderr || error.message))) return []; throw error }
+  const items = JSON.parse(run('himalaya', ['--json', 'envelope', 'list', '-a', account.id, '-m', folder, '-p', String(page), '-s', String(limit)])).envelopes
+  if (!Array.isArray(items)) throw Error('Expected Himalaya envelope list')
+  return items
 }
 function allEnvelopes(account, folder = 'INBOX') {
   const all = []
@@ -59,7 +59,10 @@ function assertTriageIsolation() {
   const deny = JSON.parse(output.slice(output.indexOf('[')))
   if (!Array.isArray(deny) || !deny.includes('*')) throw Error(`Triage agent ${triageAgent} must have tools.deny: ["*"]`)
 }
-function readMail(account, id) { return run('himalaya', ['message', 'read', '--preview', '-a', account.id, '-f', 'INBOX', String(id)]).slice(0, 12_000) }
+function assertHimalayaVersion() {
+  if (!himalayaVersionOk(run('himalaya', ['--version']))) throw Error('Himalaya v2 or newer is required')
+}
+function readMail(account, id) { return run('himalaya', ['message', 'read', '-a', account.id, '-m', 'INBOX', String(id)]).slice(0, 12_000) }
 function sentAfter(account, record) {
   const cutoff = Date.parse(record.receivedAt) - 5 * 60_000
   if (!Number.isFinite(cutoff)) throw Error('Cannot verify sent mail without a valid received time')
@@ -77,10 +80,10 @@ function sendMail(account, record) {
   const from = safeHeader(account.from)
   const to = safeHeader(record.from)
   if (!record.draft || !emailAddress(to)) throw Error('No safe draft or recipient')
-  const message = `From: ${from}\nTo: ${to}\nSubject: ${/^re\s*:/i.test(subject) ? subject : `Re: ${subject}`}\nContent-Type: text/plain; charset=utf-8\n\n${record.draft}`
-  run('himalaya', ['template', 'send', '-a', account.id], message, 60_000)
+  const save = account.saveSentCopy ? ['--save', account.sentFolder] : ['--no-save']
+  run('himalaya', ['message', 'send', '-a', account.id, ...save], buildReply({ from, to, subject, body: record.draft }), 60_000)
 }
-function moveTrash(account, record) { run('himalaya', ['message', 'move', '-a', account.id, '-f', 'INBOX', account.trashFolder, String(record.sourceId)]) }
+function moveTrash(account, record) { run('himalaya', ['message', 'move', '-a', account.id, '-f', 'INBOX', '-t', account.trashFolder, String(record.sourceId)]) }
 async function discord(method, route, body) {
   const response = await fetch(`https://discord.com/api/v10${route}`, {
     method, headers: { Authorization: `Bot ${token}`, 'Content-Type': 'application/json' },
@@ -199,6 +202,7 @@ async function main() {
   try { fs.mkdirSync(lockDir) }
   catch { throw Error('Another smart-mailbox process is running; inspect .state/run.lock before retrying') }
   try {
+    assertHimalayaVersion()
     assertTriageIsolation()
     if (process.argv.includes('--init')) {
       if (db.initializedAt) throw Error('Already initialized; existing baseline preserved')

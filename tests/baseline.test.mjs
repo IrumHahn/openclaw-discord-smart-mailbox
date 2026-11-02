@@ -14,7 +14,7 @@ test('initialization never processes older mail beyond the first page', () => {
     fs.writeFileSync(ids, JSON.stringify(Array.from({ length: 150 }, (_, i) => i + 1)))
     const himalaya = path.join(bin, 'himalaya')
     fs.writeFileSync(himalaya, `#!/usr/bin/env node
-const fs=require('fs');const args=process.argv.slice(2);const page=Number(args[args.indexOf('-p')+1]);const size=Number(args[args.indexOf('-s')+1]);const ids=JSON.parse(fs.readFileSync(process.env.MOCK_MAIL_IDS_FILE,'utf8')).toReversed();const data=ids.slice((page-1)*size,page*size).map(id=>({id:String(id),from:{addr:'sender@example.com'},subject:'Old mail',date:'2026-01-01T00:00:00Z'}));if(!data.length&&page>1){process.stderr.write('out of bounds');process.exit(1)}process.stdout.write(JSON.stringify(data));`)
+const fs=require('fs');const args=process.argv.slice(2);if(args[0]==='--version'){console.log('himalaya v2.2.1');process.exit(0)}if(args[0]!=='--json'||!args.includes('-m')||args.includes('-f')||args.includes('-o')){process.stderr.write('unexpected argument');process.exit(2)}const page=Number(args[args.indexOf('-p')+1]);const size=Number(args[args.indexOf('-s')+1]);const ids=JSON.parse(fs.readFileSync(process.env.MOCK_MAIL_IDS_FILE,'utf8')).toReversed();const data=ids.slice((page-1)*size,page*size).map(id=>({id:String(id),from:[{name:null,email:'sender@example.com'}],subject:'Old mail',date:'2026-01-01T00:00:00Z'}));process.stdout.write(JSON.stringify({queued:0,envelopes:data}));`)
     fs.chmodSync(himalaya, 0o700)
     const openclaw = path.join(bin, 'openclaw')
     fs.writeFileSync(openclaw, '#!/bin/sh\nif [ "$1" = config ]; then printf "[\\"*\\"]\\n"; else exit 12; fi\n')

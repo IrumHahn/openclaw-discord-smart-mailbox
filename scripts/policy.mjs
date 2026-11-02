@@ -4,8 +4,45 @@ export function recordKey(account, id) { return `${account}:${id}` }
 export function safeHeader(value) { return String(value ?? '').replace(/[\x00-\x1f\x7f]/g, ' ').trim().slice(0, 200) }
 export function safeDiscord(value, limit = 1200) { return String(value ?? '').replace(/@/g, '@\u200b').slice(0, limit) }
 export function emailAddress(value) {
-  const candidate = typeof value === 'string' ? value : Array.isArray(value) ? value[0]?.addr : value?.addr
+  const first = Array.isArray(value) ? value[0] : value
+  const candidate = typeof first === 'string' ? first : first?.email ?? first?.addr
   return String(candidate ?? '').match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] ?? ''
+}
+// `himalaya message send` transmits bytes as given, so non-ASCII headers must be RFC 2047 encoded here.
+export function encodeHeaderWord(value) {
+  const text = String(value ?? '')
+  if (/^[\x20-\x7e]*$/.test(text)) return text
+  const words = []
+  let chunk = ''
+  for (const char of text) {
+    if (Buffer.byteLength(chunk + char) > 39) { words.push(chunk); chunk = '' }
+    chunk += char
+  }
+  words.push(chunk)
+  return words.map(word => `=?UTF-8?B?${Buffer.from(word).toString('base64')}?=`).join('\r\n ')
+}
+function encodeMailbox(value) {
+  const match = String(value ?? '').match(/^\s*"?([^"<]*?)"?\s*<([^<>\s]+)>\s*$/)
+  return match ? `${match[1] ? `${encodeHeaderWord(match[1])} ` : ''}<${match[2]}>` : String(value ?? '')
+}
+export function buildReply({ from, to, subject, body, date = new Date(), id = crypto.randomUUID() }) {
+  const domain = emailAddress(from).split('@')[1] || 'localhost'
+  const headers = [
+    `From: ${encodeMailbox(from)}`,
+    `To: ${to}`,
+    `Subject: ${encodeHeaderWord(/^re\s*:/i.test(subject) ? subject : `Re: ${subject}`)}`,
+    `Date: ${date.toUTCString().replace('GMT', '+0000')}`,
+    `Message-ID: <${id}@${domain}>`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset=utf-8',
+    'Content-Transfer-Encoding: base64'
+  ]
+  const encoded = Buffer.from(String(body)).toString('base64').match(/.{1,76}/g) ?? []
+  return `${headers.join('\r\n')}\r\n\r\n${encoded.join('\r\n')}\r\n`
+}
+export function himalayaVersionOk(output) {
+  const major = Number(String(output).match(/v?(\d+)\.\d+/)?.[1])
+  return major >= 2
 }
 export function normalizedSubject(value) { return safeHeader(value).replace(/^(?:(?:re|fw|fwd)\s*:\s*)+/ig, '').toLowerCase() }
 export function sentMatch(items, record) {

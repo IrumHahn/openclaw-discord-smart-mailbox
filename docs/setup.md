@@ -64,14 +64,34 @@ openclaw config get agents.entries.mail-triage.tools.deny --json
 
 ```bash
 brew install himalaya
-himalaya account configure personal
-himalaya account list
-himalaya account doctor personal
-himalaya folder list -a personal
-himalaya envelope list -a personal -f INBOX -p 1 -s 3 -o json
+himalaya --version
+mkdir -p ~/.config/himalaya
+read -rsp "앱 비밀번호: " P && echo && printf %s "${P// /}" > ~/.config/himalaya/mail.pass && chmod 600 ~/.config/himalaya/mail.pass
 ```
 
-`personal`은 **자신이 설정한 계정 ID**로 바꿉니다. 복수 계정이면 각각 설정하세요. 비밀번호·OAuth 비밀값은 Himalaya가 지원하는 키링/비밀 저장 방식을 사용하고, 프로젝트 폴더에 복사하지 않습니다. 각 계정의 **보낸편지함·휴지통 폴더 이름**은 `himalaya folder list` 결과 그대로 `config.json`에 입력합니다. Gmail의 현지화된 폴더 이름은 `Sent`/`Trash`와 다를 수 있습니다. 읽기만 확인하는 단계에서는 실제 메일 발송을 하지 않습니다.
+이 키트는 **Himalaya v2 이상**이 필요합니다(2026-11-02 v2.2.1에서 확인). 호스팅어 OpenClaw 이미지에는 이미 들어 있습니다. `~/.config/himalaya/config.toml`을 아래처럼 만듭니다. Gmail 예시이며, 네이버는 `imap.naver.com`·`smtp.naver.com`입니다.
+
+```toml
+[accounts.personal]
+default = true
+email = "you@gmail.com"
+imap.server = "imap.gmail.com"
+imap.sasl.plain.username = "you@gmail.com"
+imap.sasl.plain.password.command = "cat ~/.config/himalaya/mail.pass"
+smtp.server = "smtp.gmail.com"
+smtp.sasl.plain.username = "you@gmail.com"
+smtp.sasl.plain.password.command = "cat ~/.config/himalaya/mail.pass"
+```
+
+연결을 확인합니다.
+
+```bash
+himalaya account list
+himalaya mailbox list -a personal
+himalaya --json envelope list -a personal -m INBOX -p 1 -s 3
+```
+
+`personal`은 **자신이 설정한 계정 ID**로 바꿉니다. 복수 계정이면 각각 설정하세요. 비밀번호·OAuth 비밀값은 Himalaya가 지원하는 키링/비밀 저장 방식을 사용하고, 프로젝트 폴더에 복사하지 않습니다. 각 계정의 **보낸편지함·휴지통 폴더 이름**은 `himalaya mailbox list` 결과의 ID 그대로 `config.json`에 입력합니다. Gmail의 현지화된 폴더 이름은 `Sent`/`Trash`와 다를 수 있습니다(예: `[Gmail]/보낸편지함`, `[Gmail]/휴지통`). 발송 후 보낸편지함 사본은 Gmail이 자동으로 남기므로 `saveSentCopy`는 `false`로 둡니다. 사본을 자동으로 남기지 않는 메일 서버만 `true`로 바꿉니다. 읽기만 확인하는 단계에서는 실제 메일 발송을 하지 않습니다.
 
 ## 5. 키트 설치·설정
 
@@ -94,7 +114,7 @@ npm test
 ./scripts/run.sh
 ```
 
-`--init`은 현재 INBOX를 페이지별로 끝까지 읽어 가장 높은 IMAP UID를 기준선으로 기록하고 **기존 메일을 처리하지 않습니다**. 두 번째 실행부터 이 UID보다 큰 새 메일만 선별합니다. 메일함이 10,000건을 넘거나 Himalaya ID가 숫자 UID가 아니면 안전하게 중지하므로, 별도 실습 계정/폴더를 쓰세요. 실제 시험에는 자신이 관리하는 다른 주소에서 무해한 테스트 문의를 보내세요. Discord에 요약·스레드·초안·반응 4개가 생겼는지 확인합니다. ✅를 누르면 **실제 SMTP 발송**이므로 테스트 수신자가 본인인지 먼저 확인합니다. 발송 후 `himalaya envelope list -a personal -f '<보낸편지함>' -p 1 -s 5 -o json`와 `.state/mailbox.json`의 `verifiedSentAt`을 확인합니다.
+`--init`은 현재 INBOX를 페이지별로 끝까지 읽어 가장 높은 IMAP UID를 기준선으로 기록하고 **기존 메일을 처리하지 않습니다**. 두 번째 실행부터 이 UID보다 큰 새 메일만 선별합니다. 메일함이 10,000건을 넘거나 Himalaya ID가 숫자 UID가 아니면 안전하게 중지하므로, 별도 실습 계정/폴더를 쓰세요. 실제 시험에는 자신이 관리하는 다른 주소에서 무해한 테스트 문의를 보내세요. Discord에 요약·스레드·초안·반응 4개가 생겼는지 확인합니다. ✅를 누르면 **실제 SMTP 발송**이므로 테스트 수신자가 본인인지 먼저 확인합니다. 발송 후 `himalaya --json envelope list -a personal -m '<보낸편지함>' -p 1 -s 5`와 `.state/mailbox.json`의 `verifiedSentAt`을 확인합니다.
 
 상시 실행은 1분마다 `./scripts/run.sh`를 호출합니다. 이미 cron/LaunchAgent가 있다면 먼저 목록을 확인하고 중복 등록하지 마세요. cron 예시:
 
