@@ -50,7 +50,7 @@ openclaw config get agents.entries.mail-triage.tools.deny --json
 
 1. [Discord Developer Portal](https://discord.com/developers/applications) → **New Application** → **Bot**. 토큰을 발급받습니다. 채팅이나 GitHub에 붙여 넣지 않습니다.
 2. Bot의 **Message Content Intent**를 켭니다. 서버 멤버 인텐트는 OpenClaw 역할 allowlist를 쓸 경우 권장됩니다.
-3. OAuth2 URL Generator에서 `bot`, `applications.commands`를 선택하고 서버에 초대합니다. 최소한 **View Channels**, **Send Messages**, **Read Message History**, **Add Reactions**, **Create Public Threads**, **Send Messages in Threads**, **Manage Threads**(완료 스레드 잠금/보관용)를 부여합니다. Discord 서버·채널의 실제 권한 오버라이드도 확인하세요.
+3. OAuth2 URL Generator에서 `bot`, `applications.commands`를 선택하고 서버에 초대합니다. 최소한 **View Channels**, **Send Messages**, **Read Message History**, **Add Reactions**, **Create Public Threads**, **Send Messages in Threads**, **Manage Threads**(완료 스레드 잠금/보관용)를 부여합니다. Discord 서버·채널의 실제 권한 오버라이드도 확인하세요. 이미 다른 권한으로 초대한 봇이라면 다시 초대하지 말고 `#메일함` 채널 설정 → 권한 → 고급 권한 → 봇에서 **공개 스레드 만들기**, **스레드 관리하기**만 허용해도 됩니다.
 4. 서버에 비공개 텍스트 채널을 만듭니다. `@everyone`은 View Channel을 끄고 본인과 봇에게만 허용합니다. 실습을 공용 수업 서버에서 한다면 특히 개인별 비공개 채널을 사용합니다.
 5. Discord **Developer Mode**를 켜고 채널 우클릭 **Copy Channel ID**, 본인 프로필 우클릭 **Copy User ID**를 기록합니다. 서버 ID는 OpenClaw 페어링에 사용합니다.
 6. `~/.openclaw/.env`에 토큰을 저장합니다. 파일을 만들 때 에디터를 써서 셸 히스토리에 값이 남지 않도록 하고 `chmod 600 ~/.openclaw/.env`로 보호합니다. 한 줄 형식은 `DISCORD_BOT_TOKEN='본인_봇_토큰'`입니다.
@@ -116,7 +116,16 @@ npm test
 
 `--init`은 현재 INBOX를 페이지별로 끝까지 읽어 가장 높은 IMAP UID를 기준선으로 기록하고 **기존 메일을 처리하지 않습니다**. 두 번째 실행부터 이 UID보다 큰 새 메일만 선별합니다. 메일함이 10,000건을 넘거나 Himalaya ID가 숫자 UID가 아니면 안전하게 중지하므로, 별도 실습 계정/폴더를 쓰세요. 실제 시험에는 자신이 관리하는 다른 주소에서 무해한 테스트 문의를 보내세요. Discord에 요약·스레드·초안·반응 4개가 생겼는지 확인합니다. ✅를 누르면 **실제 SMTP 발송**이므로 테스트 수신자가 본인인지 먼저 확인합니다. 발송 후 `himalaya --json envelope list -a personal -m '<보낸편지함>' -p 1 -s 5`와 `.state/mailbox.json`의 `verifiedSentAt`을 확인합니다.
 
-상시 실행은 1분마다 `./scripts/run.sh`를 호출합니다. 이미 cron/LaunchAgent가 있다면 먼저 목록을 확인하고 중복 등록하지 마세요. cron 예시:
+> ⚠️ **첫 메일 시험은 비서(에이전트) 채팅의 exec로 실행하지 마세요.** 다른 에이전트 안에서 `openclaw agent`를 부르면 OpenClaw 세션 보안 정책이 막아서 카드에 "AI 요약 실패"가 뜹니다. `--init`과 `npm test`는 exec로 해도 됩니다. 메일 시험은 아래 정기 작업으로 하거나 VPS 터미널에서 직접 `./scripts/run.sh`를 실행하세요.
+
+상시 실행은 1분마다 `./scripts/run.sh`를 호출합니다. OpenClaw 게이트웨이(호스팅어 VPS 포함)에서는 **OpenClaw 정기 작업을 쓰세요**. AI를 부르지 않는 명령 작업이고, 결과를 채널로 보내지 않습니다.
+
+```bash
+openclaw cron list
+openclaw cron add --name smart-mailbox --every 1m --command "$HOME/.openclaw/skills/discord-smart-mailbox/scripts/run.sh" --timeout-seconds 280 --no-deliver
+```
+
+컴퓨터의 cron/LaunchAgent를 쓸 수도 있습니다. 이미 등록돼 있다면 먼저 목록을 확인하고 중복 등록하지 마세요. cron 예시:
 
 ```bash
 crontab -l
