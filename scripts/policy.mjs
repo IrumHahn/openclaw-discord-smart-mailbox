@@ -47,7 +47,9 @@ export function himalayaVersionOk(output) {
 export function normalizedSubject(value) { return safeHeader(value).replace(/^(?:(?:re|fw|fwd)\s*:\s*)+/ig, '').toLowerCase() }
 export function sentMatch(items, record) {
   const cutoff = Date.parse(record.receivedAt ?? '') - 5 * 60_000
-  return items.some(item => normalizedSubject(item.subject) === normalizedSubject(record.subject)
+  // A self-sent original also sits in Sent with the same subject; only a reply (Re:) counts as already answered.
+  return items.some(item => /^\s*re\s*:/i.test(String(item.subject ?? ''))
+    && normalizedSubject(item.subject) === normalizedSubject(record.subject)
     && (Array.isArray(item.to) ? item.to : [item.to]).some(to => emailAddress(to).toLowerCase() === record.from.toLowerCase())
     && Date.parse(item.date ?? '') >= cutoff)
 }

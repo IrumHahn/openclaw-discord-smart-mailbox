@@ -11,6 +11,7 @@ test('sent verification requires recipient, subject, and time', () => {
   const record = { from: 'sender@example.com', subject: 'Hello', receivedAt: '2026-10-24T00:00:00Z' }
   assert.equal(sentMatch([{ to: [{ addr: 'sender@example.com' }], subject: 'Re: Hello', date: '2026-10-24T00:02:00Z' }], record), true)
   assert.equal(sentMatch([{ to: [{ addr: 'other@example.com' }], subject: 'Re: Hello', date: '2026-10-24T00:02:00Z' }], record), false)
+  assert.equal(sentMatch([{ to: [{ addr: 'sender@example.com' }], subject: 'Hello', date: '2026-10-24T00:02:00Z' }], record), false)
 })
 test('invalid model output fails closed and mentions are escaped', () => {
   assert.equal(parseTriage('not JSON'), null)
